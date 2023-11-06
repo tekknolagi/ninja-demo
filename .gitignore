@@ -1,0 +1,5 @@
+__pycache__
+main
+*.o
+.ninja*
+build.ninja
