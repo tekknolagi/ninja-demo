@@ -320,8 +320,11 @@ for i, target in enumerate(build_list):
     # replace the input and output file names.
     cmd = rule.variables["command"]
 
-    if os.path.exists(target):
+    try:
         target_mtime = os.path.getmtime(target)
+    except FileNotFoundError:
+        pass
+    else:
         must_rebuild = any(os.path.getmtime(dep) > target_mtime for dep in build.directive.deps)
         if not must_rebuild:
             continue
