@@ -166,7 +166,7 @@ def replace_variables(line, bl=None):
     prev = None
     while prev != line:
         prev = line
-        for var in re.findall("\$([A-Za-z0-9]+)", line):
+        for var in re.findall(r"\$([A-Za-z0-9]+)", line):
             if var in variables:
                 line = line.replace(f"${var}", variables[var])
     return line
