@@ -7,11 +7,11 @@ with open("build.ninja", "w+") as f:
     writer = ninja.Writer(f)
     writer.variable("builddir", "build")
     writer.variable("cc", os.getenv("CC", "clang"))
-    writer.rule("cc", "$cc $cflags -c -o $out $in")
+    writer.rule("cc", "$cc -MD -MF $out.d $cflags -c -o $out $in", depfile="$out.d")
     writer.rule("ld", "$cc -o $out $in $ldflags")
     objs = []
     objs += writer.build("main.o", "cc", "main.c")
-    objs += writer.build("lib.o", "cc", "lib.c", implicit=["lib.h"])
+    objs += writer.build("lib.o", "cc", "lib.c")
     writer.build("main", "ld", objs)
 
     writer.rule("regen_ninja", f"{sys.executable} $in")
