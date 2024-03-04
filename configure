@@ -7,7 +7,7 @@ with open("build.ninja", "w+") as f:
     writer = ninja.Writer(f)
     writer.variable("builddir", "build")
     writer.variable("cc", os.getenv("CC", "clang"))
-    writer.rule("cc", "$cc -MD -MF $out.d $cflags -c -o $out $in", depfile="$out.d")
+    writer.rule("cc", "$cc -MD -MF $out.d $cflags -c -o $out $in", depfile="$out.d", deps="gcc")
     writer.rule("ld", "$cc -o $out $in $ldflags")
     objs = []
     objs += writer.build("main.o", "cc", "main.c")
