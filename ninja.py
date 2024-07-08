@@ -319,6 +319,19 @@ def progress(i):
     width = len(str(total))
     return f"[{i+1:>{width}}/{total}]"
 
+import graphlib
+topo = graphlib.TopologicalSorter()
+for obj in build_list:
+    build = get_build(obj)
+    topo.add(obj, *build.directive.deps)
+topo.prepare()
+while topo.is_active():
+    ready = topo.get_ready()
+    print(ready)
+    for obj in ready:  # TODO(max): parallelize
+        topo.done(obj)
+sys.exit(0)
+
 
 for i, target in enumerate(build_list):
     # Create directory
