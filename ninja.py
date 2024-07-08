@@ -24,6 +24,8 @@ from pathlib import Path
 from collections import namedtuple
 import os, sys, argparse, re
 import subprocess
+import graphlib
+import concurrent.futures
 
 # Self-contained, limited implementation of the Ninja build system
 
@@ -51,6 +53,9 @@ parser.add_argument("-f", "--file", default="build.ninja")
 
 # Dry run pretends to run the commands without actually running them.
 parser.add_argument("-n", "--dry-run", action="store_true")
+
+# Number of parallel jobs
+parser.add_argument("-j", default=8, type=int)
 
 # Verbose, makes the output noisy with commands that are being run.
 parser.add_argument("-v", "--verbose", action="store_true")
@@ -319,21 +324,12 @@ def progress(i):
     width = len(str(total))
     return f"[{i+1:>{width}}/{total}]"
 
-import graphlib
-topo = graphlib.TopologicalSorter()
-for obj in build_list:
-    build = get_build(obj)
-    topo.add(obj, *build.directive.deps)
-topo.prepare()
-while topo.is_active():
-    ready = topo.get_ready()
-    print(ready)
-    for obj in ready:  # TODO(max): parallelize
-        topo.done(obj)
-sys.exit(0)
+
+import threading
+terminal_lock = threading.Lock()
 
 
-for i, target in enumerate(build_list):
+def build_target(target):
     # Create directory
     Path(target).parent.mkdir(parents=True, exist_ok=True)
 
@@ -360,12 +356,38 @@ for i, target in enumerate(build_list):
     if args.verbose:
         description = cmd
 
-    print(progress(i), description)
+    with terminal_lock:
+        print(description)
 
     # If we are not in a dry run, execute the command
     if not args.dry_run:
         proc = subprocess.run(cmd, shell=True)
         if proc.returncode != 0:
-            print(cmd)
-            print("Command failed, aborting build")
-            break
+            with terminal_lock:
+                print(cmd)
+                print("Command failed, aborting build")
+                sys.exit(1)
+
+
+# Prepare the topological sorter
+topo = graphlib.TopologicalSorter()
+for obj in build_list:
+    deps = list(filter(get_build, get_build(obj).directive.deps))
+    topo.add(obj, *deps)
+topo.prepare()
+
+
+topo_lock = threading.Lock()
+def mark_done(job):
+    def inner(_):
+        with topo_lock:
+            topo.done(job)
+    return inner
+
+
+# Build
+with concurrent.futures.ThreadPoolExecutor(args.j) as pool:
+    while topo.is_active():
+        for job in topo.get_ready():
+            f = pool.submit(build_target, job)
+            f.add_done_callback(mark_done(job))
