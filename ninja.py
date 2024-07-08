@@ -25,8 +25,7 @@ from collections import namedtuple
 import os, sys, argparse, re
 import subprocess
 import graphlib
-import concurrent.futures
-import threading
+import multiprocessing
 
 # Self-contained, limited implementation of the Ninja build system
 
@@ -326,7 +325,7 @@ def progress(i):
     return f"[{i+1:>{width}}/{total}]"
 
 
-terminal_lock = threading.Lock()
+terminal_lock = multiprocessing.Lock()
 
 
 def build_target(target):
@@ -377,7 +376,7 @@ for obj in build_list:
 topo.prepare()
 
 
-topo_lock = threading.Lock()
+topo_lock = multiprocessing.Lock()
 def mark_done(job):
     def inner(_):
         with topo_lock:
@@ -386,8 +385,7 @@ def mark_done(job):
 
 
 # Build
-with concurrent.futures.ThreadPoolExecutor(args.j) as pool:
+with multiprocessing.Pool(args.j) as pool:
     while topo.is_active():
         for job in topo.get_ready():
-            f = pool.submit(build_target, job)
-            f.add_done_callback(mark_done(job))
+            pool.map_async(build_target, [job], callback=mark_done(job))
