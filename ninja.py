@@ -26,6 +26,7 @@ import os, sys, argparse, re
 import subprocess
 import graphlib
 import concurrent.futures
+import threading
 
 # Self-contained, limited implementation of the Ninja build system
 
@@ -325,7 +326,6 @@ def progress(i):
     return f"[{i+1:>{width}}/{total}]"
 
 
-import threading
 terminal_lock = threading.Lock()
 
 
