@@ -293,6 +293,16 @@ while unmarked or temp:
     n = unmarked.pop()
     visit(n)
 
+
+def needs_rebuild(target):
+    try:
+        target_mtime = os.path.getmtime(target)
+    except FileNotFoundError:
+        return True
+    else:
+        build = get_build(target)
+        return any(os.path.getmtime(dep) > target_mtime for dep in build.directive.deps)
+
 # ------------------------------------------------------------------------------
 
 # With the topological sort out of the way, we now know that if we just build
@@ -301,6 +311,7 @@ while unmarked or temp:
 # Only build the targets that we have build rules for. Anything else is probably
 # a code file or the result of a previous command.
 build_list = list(filter(get_build, build_list))
+build_list = list(filter(needs_rebuild, build_list))
 
 
 def progress(i):
@@ -319,15 +330,6 @@ for i, target in enumerate(build_list):
     # Get the  command from the  rule, and do  a quick variable  substitution to
     # replace the input and output file names.
     cmd = rule.variables["command"]
-
-    try:
-        target_mtime = os.path.getmtime(target)
-    except FileNotFoundError:
-        pass
-    else:
-        must_rebuild = any(os.path.getmtime(dep) > target_mtime for dep in build.directive.deps)
-        if not must_rebuild:
-            continue
 
     build.variables["in"] = " ".join(build.directive.deps)
     build.variables["out"] = target
