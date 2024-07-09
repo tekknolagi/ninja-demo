@@ -367,6 +367,8 @@ def build_target(target):
                 print("Command failed, aborting build")
                 sys.exit(1)
 
+    return target
+
 
 # Prepare the topological sorter
 topo = graphlib.TopologicalSorter()
@@ -378,14 +380,12 @@ topo.prepare()
 
 topo_lock = multiprocessing.Lock()
 def mark_done(job):
-    def inner(_):
-        with topo_lock:
-            topo.done(job)
-    return inner
+    with topo_lock:
+        topo.done(job)
 
 
 # Build
 with multiprocessing.Pool(args.j) as pool:
     while topo.is_active():
         for job in topo.get_ready():
-            pool.apply_async(build_target, [job], callback=mark_done(job))
+            pool.apply_async(build_target, [job], callback=mark_done)
