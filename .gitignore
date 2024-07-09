@@ -3,3 +3,4 @@ main
 *.o
 .ninja*
 build.ninja
+*.d
