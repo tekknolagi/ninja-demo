@@ -388,4 +388,4 @@ def mark_done(job):
 with multiprocessing.Pool(args.j) as pool:
     while topo.is_active():
         for job in topo.get_ready():
-            pool.map_async(build_target, [job], callback=mark_done(job))
+            pool.apply_async(build_target, [job], callback=mark_done(job))
