@@ -3,17 +3,19 @@ import ninja_syntax as ninja
 import os
 import sys
 
-with open("build.ninja", "w+") as f:
+ROOTDIR = os.path.dirname(os.path.abspath(__file__))
+BUILDDIR = f"{ROOTDIR}/build"
+
+with open(f"{BUILDDIR}/build.ninja", "w+") as f:
     writer = ninja.Writer(f)
-    writer.variable("builddir", "build")
     writer.variable("cc", os.getenv("CC", "clang"))
     writer.rule("cc", "$cc -MD -MF $out.d $cflags -c -o $out $in", depfile="$out.d", deps="gcc")
     writer.rule("ld", "$cc -o $out $in $ldflags")
     objs = []
-    objs += writer.build("main.o", "cc", "main.c")
-    objs += writer.build("lib.o", "cc", "lib.c")
+    objs += writer.build("main.o", "cc", f"{ROOTDIR}/main.c")
+    objs += writer.build("lib.o", "cc", f"{ROOTDIR}/lib.c")
     writer.build("main", "ld", objs)
 
     writer.rule("regen_ninja", f"{sys.executable} $in")
-    writer.build("build.ninja", "regen_ninja", "./configure")
+    writer.build("build.ninja", "regen_ninja", f"{ROOTDIR}/configure")
     writer.close()
