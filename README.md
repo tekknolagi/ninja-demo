@@ -19,3 +19,17 @@ $
 ```
 
 Look ma, no rebuilds.
+
+or if you want to specify a build directory (which unfortunately `ninja.py`
+does not yet support):
+
+```console
+$ ./configure -B build
+$ ninja -C build
+ninja: Entering directory `build'
+[1/1] /usr/bin/python3 /home/max/Documents/code/ninja-demo/configure
+[1/3] clang -MD -MF lib.o.d  -c -o lib.o /home/max/Documents/code/ninja-demo/lib.c
+[2/3] clang -MD -MF main.o.d  -c -o main.o /home/max/Documents/code/ninja-demo/main.c
+[3/3] clang -o main main.o lib.o
+$
+```

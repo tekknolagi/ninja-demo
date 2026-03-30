@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
+import argparse
 import ninja_syntax as ninja
 import os
 import sys
 
 ROOTDIR = os.path.dirname(os.path.abspath(__file__))
-BUILDDIR = f"{ROOTDIR}/build"
+parser = argparse.ArgumentParser(description="Configure the build system")
+parser.add_argument("-B", dest="build_dir", default=ROOTDIR, help="Explicitly specify a build directory")
+args = parser.parse_args()
+BUILDDIR = os.path.abspath(args.build_dir)
 
 with open(f"{BUILDDIR}/build.ninja", "w+") as f:
     writer = ninja.Writer(f)
